@@ -5,13 +5,25 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 )
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	reader := bufio.NewReader(os.Stdin)
+
+	// Create a channel to listen for interrupt signals
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-signalChan
+		fmt.Println("\nAvslutter programmet...")
+		os.Exit(0)
+	}()
 
 	for {
 		// Generate random hours and minutes
@@ -43,7 +55,7 @@ func main() {
 			fmt.Println("Du svarte:", userInput)
 
 			// Check if the user's input matches any accepted answers
-			if isAnswerAccepted(userInput, correctAnswer, acceptedAnswers) {
+			if isAnswerAccepted(userInput, correctAnswer, acceptedAnswers, hours, minutes) {
 				fmt.Printf("Riktig! %s\n", correctAnswer)
 				correct = true
 			} else {
@@ -68,26 +80,35 @@ func main() {
 
 // formatNorwegianTime converts hours and minutes to a Norwegian-style time format
 func formatNorwegianTime(hours, minutes int) string {
-	hours = hours % 12
+	var displayHour int
 	if hours == 0 {
-		hours = 12
+		displayHour = 12 // Midnight
+	} else if hours == 23 {
+		displayHour = 11 // 23:00 is 11 PM
+	} else if hours >= 13 {
+		displayHour = hours - 12 // Convert to 12-hour format
+	} else {
+		displayHour = hours
 	}
 
-	nextHour := (hours % 12) + 1
+	nextHour := (displayHour % 12) + 1
 	if nextHour > 12 {
 		nextHour = 1
 	}
 
 	if minutes == 0 {
-		return fmt.Sprintf("%s", numberToNorwegian(hours))
+		if hours == 0 {
+			return "Klokka er midnatt" // Midnight special case
+		}
+		return fmt.Sprintf("Klokka er %s", numberToNorwegian(displayHour))
 	} else if minutes == 30 {
 		return fmt.Sprintf("halv %s", numberToNorwegian(nextHour))
 	} else if minutes == 15 {
-		return fmt.Sprintf("kvart over %s", numberToNorwegian(hours))
+		return fmt.Sprintf("kvart over %s", numberToNorwegian(displayHour))
 	} else if minutes == 45 {
 		return fmt.Sprintf("kvart på %s", numberToNorwegian(nextHour))
 	} else if minutes < 30 {
-		return handleMinutesLessThanHalfPast(hours, minutes)
+		return handleMinutesLessThanHalfPast(displayHour, minutes)
 	} else {
 		return handleMinutesMoreThanHalfPast(nextHour, minutes)
 	}
@@ -140,7 +161,7 @@ func handleMinutesMoreThanHalfPast(nextHour, minutes int) string {
 // numberToNorwegian converts an integer to its Norwegian text representation
 func numberToNorwegian(n int) string {
 	numbers := []string{
-		"null", "ett", "to", "tre", "fire", "fem", "seks", "sju", "åtte", "ni",
+		"midnatt", "ett", "to", "tre", "fire", "fem", "seks", "sju", "åtte", "ni",
 		"ti", "elleve", "tolv", "tretten", "fjorten", "femten", "seksten", "sytten",
 		"atten", "nitten", "tjue", "tjueen", "tjueto", "tjuetre", "tjuefire", "tjuefem",
 		"tjueseks", "tjueni", "trettien", "trettito", "trettitre", "trettifire", "trettiseks",
@@ -155,15 +176,32 @@ func numberToNorwegian(n int) string {
 // generateAcceptedAnswers generates a list of accepted answers for a given hour and minute
 func generateAcceptedAnswers(hours, minutes int) []string {
 	var answers []string
+	var displayHour int
+
+	// Convert hours for representation
+	if hours == 0 {
+		displayHour = 12 // Midnight
+	} else if hours == 23 {
+		displayHour = 11 // 23:00 is 11 PM
+	} else if hours >= 13 {
+		displayHour = hours - 12 // Convert to 12-hour format
+	} else {
+		displayHour = hours
+	}
+
 	answers = append(answers, formatNorwegianTime(hours, minutes))
 
 	if minutes == 0 {
+		if hours == 0 {
+			answers = append(answers, "klokka er midnatt") // Midnight special case
+			return answers
+		}
 		return answers
 	}
 
 	nextHour := (hours + 1) % 24
 	if minutes < 30 {
-		answers = append(answers, fmt.Sprintf("klokka er %s minutter over %s", numberToNorwegian(minutes), numberToNorwegian(hours)))
+		answers = append(answers, fmt.Sprintf("klokka er %s minutter over %s", numberToNorwegian(minutes), numberToNorwegian(displayHour)))
 	} else if minutes == 30 {
 		answers = append(answers, fmt.Sprintf("klokka er halv %s", numberToNorwegian(nextHour)))
 	} else {
@@ -171,7 +209,7 @@ func generateAcceptedAnswers(hours, minutes int) []string {
 	}
 
 	if minutes >= 15 && minutes < 30 {
-		answers = append(answers, fmt.Sprintf("klokka er kvart over %s", numberToNorwegian(hours)))
+		answers = append(answers, fmt.Sprintf("klokka er kvart over %s", numberToNorwegian(displayHour)))
 	} else if minutes >= 30 && minutes < 45 {
 		answers = append(answers, fmt.Sprintf("klokka er kvart på %s", numberToNorwegian(nextHour)))
 	}
@@ -180,19 +218,81 @@ func generateAcceptedAnswers(hours, minutes int) []string {
 }
 
 // isAnswerAccepted checks if the user input matches any accepted answers
-func isAnswerAccepted(userInput, correctAnswer string, acceptedAnswers []string) bool {
+func isAnswerAccepted(userInput, correctAnswer string, acceptedAnswers []string, hours, minutes int) bool {
 	// Normalize the user input for comparison
 	userInput = strings.ToLower(userInput)
 	correctAnswer = strings.ToLower(correctAnswer)
 
+	// Create a version of user input without "klokka er"
+	trimmedUserInput := strings.ReplaceAll(userInput, "klokka er ", "")
+
 	// Check if the user's input matches the correct answer or any accepted alternatives
-	if userInput == correctAnswer {
+	if userInput == correctAnswer || trimmedUserInput == correctAnswer {
 		return true
 	}
-	for _, answer := range acceptedAnswers {
-		if userInput == answer {
+
+	// Allow for a close match for the hour
+	nextHour := (hours + 1) % 24
+
+	// Check if the user input is close enough (within 1 minute)
+	if minutes == 59 {
+		if userInput == fmt.Sprintf("klokka er %s", numberToNorwegian(nextHour)) || trimmedUserInput == "elleve" {
+			return true
+		}
+	} else if minutes == 0 {
+		if userInput == fmt.Sprintf("klokka er %s", numberToNorwegian(hours)) || trimmedUserInput == numberToNorwegian(hours) {
 			return true
 		}
 	}
+
+	// Allow saying the next hour if within 5 minutes to the hour
+	if minutes >= 55 {
+		if userInput == fmt.Sprintf("klokka er %s", numberToNorwegian(nextHour)) || trimmedUserInput == numberToNorwegian(nextHour) {
+			return true
+		}
+	}
+
+	// Allow saying the current hour if it's 5 minutes after the hour
+	if minutes <= 5 {
+		if userInput == fmt.Sprintf("klokka er %s", numberToNorwegian(hours)) || trimmedUserInput == numberToNorwegian(hours) {
+			return true
+		}
+	}
+
+	// Check for specific close matches based on minute ranges
+	if minutes >= 25 && minutes < 35 {
+		// Expecting "halv" when nextHour is 12
+		if userInput == fmt.Sprintf("klokka er halv %s", numberToNorwegian(nextHour)) ||
+			trimmedUserInput == fmt.Sprintf("halv %s", numberToNorwegian(nextHour)) ||
+			userInput == fmt.Sprintf("klokka er %s", numberToNorwegian(nextHour)) {
+			return true
+		}
+	}
+
+	if minutes >= 10 && minutes < 20 {
+		// Expecting "kvart over" when hours is 11
+		if userInput == fmt.Sprintf("klokka er kvart over %s", numberToNorwegian(hours)) ||
+			trimmedUserInput == fmt.Sprintf("kvart over %s", numberToNorwegian(hours)) ||
+			userInput == fmt.Sprintf("klokka er %s", numberToNorwegian(hours)) {
+			return true
+		}
+	}
+	// Check for specific close matches based on minute ranges
+	if minutes >= 40 && minutes < 50 {
+		// Expecting "kvart på tolv" when hours is 11
+		if userInput == fmt.Sprintf("klokka er kvart på %s", numberToNorwegian(nextHour)) ||
+			trimmedUserInput == fmt.Sprintf("kvart på %s", numberToNorwegian(nextHour)) ||
+			userInput == fmt.Sprintf("klokka er %s minutter på %s", numberToNorwegian(12), numberToNorwegian(nextHour)) {
+			return true
+		}
+	}
+
+	// Check other accepted answers
+	for _, answer := range acceptedAnswers {
+		if userInput == answer || trimmedUserInput == answer {
+			return true
+		}
+	}
+
 	return false
 }
