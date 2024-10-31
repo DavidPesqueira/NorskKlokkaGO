@@ -1,20 +1,67 @@
-# Norsk Klokka GO
+# Norwegian Time-Telling Game
 
-Norsk Klokka GO is a simple command-line application that helps users practice telling time in Norwegian. The program generates random times in a 24-hour format and checks user input against correct and accepted Norwegian phrases for those times.
+This command-line game challenges players to tell the time in Norwegian based on a 24-hour clock format. Players are presented with a randomly generated time and must respond in Norwegian. The game supports variations in user input and includes helpful feedback.
 
 ## Features
 
-- **Random Time Generation**: The program randomly generates a time in the 24-hour format (00:00 to 23:59) for users to practice.
-  
-- **Norwegian Time Formats**: Users can respond with various Norwegian phrases to indicate the time, accommodating several accepted formats, such as:
-  - Exact hour (e.g., "klokka ni")
-  - Minutes past the hour (e.g., "ti over ni")
-  - Half past (e.g., "halv ti")
-  - Minutes to the next hour (e.g., "fem på ti")
-  - Quarter past/to (e.g., "kvart over ni" or "kvart på ti")
+- Generates random times using a 24-hour clock format.
+- Accepts various formats of time responses in Norwegian.
+- Provides feedback for correct and incorrect answers.
+- Handles close matches for user input to enhance gameplay.
+- Graceful exit when interrupted.
 
-- **Correctness Feedback**: After a user inputs their response, the program checks if the answer is correct, providing immediate feedback. It indicates if the response is right or wrong.
+## Functions
 
-- **Alternative Accepted Answers**: If the user's answer is correct, the program also lists alternative accepted formats for the same time. If incorrect, users can press 's' to see the correct answer.
+### `main()`
 
-- **User Interaction**: The program prompts users to try again after a wrong answer or offers an option to exit the program.
+The entry point of the application. This function:
+
+- Seeds the random number generator.
+- Sets up a reader to capture user input.
+- Initializes signal handling for a graceful exit.
+- Generates random hours and minutes for the game.
+- Displays the time and prompts the user for their answer.
+- Provides feedback based on user input and allows retrying or exiting.
+
+### `formatNorwegianTime(hours, minutes int) string`
+
+Converts hours and minutes into a Norwegian-style time format. This function:
+
+- Translates 24-hour format into a format suitable for Norwegian time-telling (1-12 hours).
+- Handles specific cases such as "halv" (half past), "kvart over" (quarter past), and "kvart på" (quarter to).
+- Returns a string representing the time in Norwegian.
+
+### `handleMinutesLessThanHalfPast(hours, minutes int) string`
+
+Handles formatting for times where minutes are less than half past the hour (0-29 minutes). This function:
+
+- Returns various formatted strings based on the number of minutes past the hour.
+
+### `handleMinutesMoreThanHalfPast(nextHour, minutes int) string`
+
+Handles formatting for times where minutes are more than half past the hour (30-59 minutes). This function:
+
+- Returns various formatted strings based on the number of minutes to the next hour.
+
+### `numberToNorwegian(n int) string`
+
+Converts an integer to its corresponding Norwegian text representation. This function:
+
+- Returns the Norwegian word for numbers from 0 to 59.
+- Ensures the number is within valid bounds.
+
+### `generateAcceptedAnswers(hours, minutes int) []string`
+
+Generates a list of accepted answers for the given hour and minute. This function:
+
+- Returns the correct answer along with other acceptable variations based on the minutes.
+- Handles special cases for 0, 15, 30, and 45 minutes.
+
+### `isAnswerAccepted(userInput, correctAnswer string, acceptedAnswers []string, hours, minutes int) bool`
+
+Checks if the user input matches any accepted answers. This function:
+
+- Normalizes user input for case insensitivity.
+- Compares user input against the correct answer and accepted alternatives.
+- Allows for close matches based on specific minute ranges (e.g., within 5 minutes of the hour).
+- Returns `true` if there is a match and `false` otherwise.
