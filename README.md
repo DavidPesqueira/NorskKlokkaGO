@@ -1,6 +1,6 @@
-# Norwegian Time-Telling Game
+# Den Norske Klokken. 
 
-This command-line game challenges players to tell the time in Norwegian based on a 24-hour clock format. Players are presented with a randomly generated time and must respond in Norwegian. The game supports variations in user input and includes helpful feedback.
+Learn on the command line. Better yet...make something like this yourself if you are trying to learn!
 
 ## Features
 
