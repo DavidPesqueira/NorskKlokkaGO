@@ -65,3 +65,6 @@ Checks if the user input matches any accepted answers. This function:
 - Compares user input against the correct answer and accepted alternatives.
 - Allows for close matches based on specific minute ranges (e.g., within 5 minutes of the hour).
 - Returns `true` if there is a match and `false` otherwise.
+
+## Screenshot of the build
+![Norsk Klokka](norskklokka.png)
