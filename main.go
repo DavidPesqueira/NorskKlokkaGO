@@ -282,7 +282,8 @@ func isAnswerAccepted(userInput, correctAnswer string, acceptedAnswers []string,
 		// Expecting "kvart på tolv" when hours is 11
 		if userInput == fmt.Sprintf("klokka er kvart på %s", numberToNorwegian(nextHour)) ||
 			trimmedUserInput == fmt.Sprintf("kvart på %s", numberToNorwegian(nextHour)) ||
-			userInput == fmt.Sprintf("klokka er %s minutter på %s", numberToNorwegian(12), numberToNorwegian(nextHour)) {
+			userInput == fmt.Sprintf("klokka er %s minutter på %s", numberToNorwegian(12), numberToNorwegian(nextHour)) ||
+			userInput == "klokka er ti over halv" {
 			return true
 		}
 	}
