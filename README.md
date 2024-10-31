@@ -67,4 +67,4 @@ Checks if the user input matches any accepted answers. This function:
 - Returns `true` if there is a match and `false` otherwise.
 
 ## Screenshot of the build
-![Norsk Klokka](norskklokka.png)
+![Norsk Klokka](norskklokka.jpg)
