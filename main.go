@@ -173,18 +173,16 @@ func numberToNorwegian(n int) string {
 	return numbers[n]
 }
 
-// generateAcceptedAnswers generates a list of accepted answers for a given hour and minute
 func generateAcceptedAnswers(hours, minutes int) []string {
 	var answers []string
 	var displayHour int
 
-	// Convert hours for representation
 	if hours == 0 {
-		displayHour = 12 // Midnight
+		displayHour = 12
 	} else if hours == 23 {
-		displayHour = 11 // 23:00 is 11 PM
+		displayHour = 11
 	} else if hours >= 13 {
-		displayHour = hours - 12 // Convert to 12-hour format
+		displayHour = hours - 12
 	} else {
 		displayHour = hours
 	}
@@ -193,7 +191,7 @@ func generateAcceptedAnswers(hours, minutes int) []string {
 
 	if minutes == 0 {
 		if hours == 0 {
-			answers = append(answers, "klokka er midnatt") // Midnight special case
+			answers = append(answers, "klokka er midnatt")
 			return answers
 		}
 		return answers
@@ -212,6 +210,12 @@ func generateAcceptedAnswers(hours, minutes int) []string {
 		answers = append(answers, fmt.Sprintf("klokka er kvart over %s", numberToNorwegian(displayHour)))
 	} else if minutes >= 30 && minutes < 45 {
 		answers = append(answers, fmt.Sprintf("klokka er kvart på %s", numberToNorwegian(nextHour)))
+	}
+
+	// Add "X minutter over halv" format for times between 31 and 40 minutes
+	if minutes >= 31 && minutes <= 40 {
+		overHalfMinutes := minutes - 30
+		answers = append(answers, fmt.Sprintf("klokka er %s minutter over halv %s", numberToNorwegian(overHalfMinutes), numberToNorwegian(nextHour)))
 	}
 
 	return answers
@@ -241,6 +245,14 @@ func isAnswerAccepted(userInput, correctAnswer string, acceptedAnswers []string,
 		}
 	} else if minutes == 0 {
 		if userInput == fmt.Sprintf("klokka er %s", numberToNorwegian(hours)) || trimmedUserInput == numberToNorwegian(hours) {
+			return true
+		}
+	}
+
+	if minutes >= 31 && minutes < 45 {
+		overHalfMinutes := minutes - 30
+		overHalfAnswer := fmt.Sprintf("klokka er %s minutter over halv %s", numberToNorwegian(overHalfMinutes), numberToNorwegian(nextHour))
+		if userInput == overHalfAnswer || trimmedUserInput == fmt.Sprintf("%s minutter over halv %s", numberToNorwegian(overHalfMinutes), numberToNorwegian(nextHour)) {
 			return true
 		}
 	}
