@@ -249,7 +249,8 @@ func isAnswerAccepted(userInput, correctAnswer string, acceptedAnswers []string,
 		}
 	}
 
-	if minutes >= 31 && minutes < 45 {
+	// Check for "X minutter over halv" format for times between 31 and 40 minutes
+	if minutes >= 31 && minutes <= 40 {
 		overHalfMinutes := minutes - 30
 		overHalfAnswer := fmt.Sprintf("klokka er %s minutter over halv %s", numberToNorwegian(overHalfMinutes), numberToNorwegian(nextHour))
 		if userInput == overHalfAnswer || trimmedUserInput == fmt.Sprintf("%s minutter over halv %s", numberToNorwegian(overHalfMinutes), numberToNorwegian(nextHour)) {
